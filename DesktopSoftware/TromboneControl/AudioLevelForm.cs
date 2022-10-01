@@ -9,15 +9,21 @@ namespace TromboneControl;
 
 public partial class AudioLevelForm : Form
 {
-    public float LevelFraction = 0;
-    int MaxPcmValue = 0;
-    int framesSinceLastRefresh = -1;
-    float[] asioData = new float[512];
-    public AsioOut asioOut;
-    SkiaCanvas _canvas;
-    private System.Drawing.Point _mouseLoc;
+    public float LevelFraction { get; private set; } = 0f;
+    public AsioOut AsioOut { get; private set; }
+    public WaveInEvent WaveIn { get; private set; }
+
+    private int maxPcmValue = 0;
+    private int framesSinceLastRefresh = -1;
+    private float[] asioData = new float[512];
+    private SkiaCanvas canvas;
+    private System.Drawing.Point mouseLoc;
     private Color fillColor = Color.FromArgb("#003366");
+    private Config configForm;
+    private KeyHandler keyHandler;
+    private const int WM_HOTKEY_MSG_ID = 0x0312;
     private const int SkipRenderFrames = 3;
+    private const Keys HotKey = Keys.M;
 
     public AudioLevelForm()
     {
@@ -25,50 +31,81 @@ public partial class AudioLevelForm : Form
         skglControl1.MouseMove += Form1_MouseMove;
         skglControl1.MouseDown += Form1_MouseDown;
 
+        keyHandler = new KeyHandler(HotKey, this);
+        keyHandler.Register();
+
+        StartAudio();
+    }
+
+    private void StartAudio()
+    {
         if (UserState.WavInEnabled)
         {
-            var waveIn = new NAudio.Wave.WaveInEvent
+            WaveIn = new WaveInEvent
             {
-                DeviceNumber = 0, // customize this to select your microphone device
-                WaveFormat = new NAudio.Wave.WaveFormat(rate: 10000, bits: 16, channels: 1),
+                // DeviceNumber = 0, // customize this to select your microphone device
+                WaveFormat = new WaveFormat(rate: 10000, bits: 16, channels: 1),
                 BufferMilliseconds = 1
             };
-            waveIn.DataAvailable += WaveIn_DataAvailable;
-            waveIn.StartRecording();
-        } 
+            WaveIn.DataAvailable += WaveIn_DataAvailable;
+            WaveIn.StartRecording();
+        }
         else if (UserState.ASIOEnabled)
         {
             var names = AsioOut.GetDriverNames();
-            asioOut = new AsioOut(AsioOut.GetDriverNames().First());
-            //asioOut.ShowControlPanel();
-            var name = asioOut.AsioInputChannelName(1);
-            asioOut.InputChannelOffset = 0;
+            AsioOut = new AsioOut(AsioOut.GetDriverNames().First());
+            AsioOut.ShowControlPanel();
+            var name = AsioOut.AsioInputChannelName(1);
+            AsioOut.InputChannelOffset = 0;
             var recordChannelCount = 1;
             var sampleRate = 48000;
-            asioOut.InitRecordAndPlayback(null, recordChannelCount, sampleRate);
-            asioOut.AudioAvailable += OnAsioOutAudioAvailable;
-            asioOut.Play(); // start recording
-
+            AsioOut.InitRecordAndPlayback(null, recordChannelCount, sampleRate);
+            AsioOut.AudioAvailable += OnAsioOutAudioAvailable;
+            AsioOut.Play(); // start recording
         }
+    }
 
+    private void HandleHotkey()
+    {
+        UserState.ControlMouse = !UserState.ControlMouse;
+        UpdateButtonLabels();
+    }
+
+    private void UpdateButtonLabels()
+    {
+        if (UserState.ControlMouse)
+        {
+            controlMouseButton.Text = "Stop (m key)";
+        }
+        else
+        {
+            controlMouseButton.Text = "Control Mouse (m key)";
+        }
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WM_HOTKEY_MSG_ID)
+            HandleHotkey();
+        base.WndProc(ref m);
     }
 
     private void Form1_MouseDown(object sender, MouseEventArgs e)
     {
-        _mouseLoc = e.Location;
+        mouseLoc = e.Location;
     }
 
     private void Form1_MouseMove(object sender, MouseEventArgs e)
     {
         if (e.Button == MouseButtons.Left)
         {
-            int dx = e.Location.X - _mouseLoc.X;
-            int dy = e.Location.Y - _mouseLoc.Y;
+            int dx = e.Location.X - mouseLoc.X;
+            int dy = e.Location.Y - mouseLoc.Y;
             this.Location = new System.Drawing.Point(this.Location.X + dx, this.Location.Y + dy);
         }
     }
 
-    void OnAsioOutAudioAvailable(object sender, AsioAudioAvailableEventArgs e)
+    private void OnAsioOutAudioAvailable(object sender, AsioAudioAvailableEventArgs e)
     {
         int latestMax = int.MinValue;
         e.GetAsInterleavedSamples(asioData);
@@ -83,8 +120,8 @@ public partial class AudioLevelForm : Form
         }
 
         // report maximum relative to the maximum value previously seen
-        MaxPcmValue = Math.Max(MaxPcmValue, latestMax);
-        float fraction = (float)latestMax / MaxPcmValue;
+        maxPcmValue = Math.Max(maxPcmValue, latestMax);
+        float fraction = (float)latestMax / maxPcmValue;
 
         // basic smoothing so the level does not change too quickly
         LevelFraction += (fraction - LevelFraction) * .1f;
@@ -100,7 +137,7 @@ public partial class AudioLevelForm : Form
         }
     }
 
-    private void WaveIn_DataAvailable(object? sender, NAudio.Wave.WaveInEventArgs e)
+    private void WaveIn_DataAvailable(object? sender, WaveInEventArgs e)
     {
         int latestMax = int.MinValue;
         for (int index = 0; index < e.BytesRecorded; index += 2)
@@ -110,8 +147,8 @@ public partial class AudioLevelForm : Form
         }
 
         // report maximum relative to the maximum value previously seen
-        MaxPcmValue = Math.Max(MaxPcmValue, latestMax);
-        float fraction = (float)latestMax / MaxPcmValue;
+        maxPcmValue = Math.Max(maxPcmValue, latestMax);
+        float fraction = (float)latestMax / maxPcmValue;
 
         // basic smoothing so the level does not change too quickly
         LevelFraction += (fraction - LevelFraction) * .1f;
@@ -132,22 +169,22 @@ public partial class AudioLevelForm : Form
         float width = skglControl1.Width;
         float height = skglControl1.Height;
 
-        if (_canvas == null)
+        if (canvas == null)
         {
-            _canvas = new SkiaCanvas() { Canvas = e.Surface.Canvas };                        
+            canvas = new SkiaCanvas() { Canvas = e.Surface.Canvas };                        
         }
-        _canvas.FillColor = fillColor;
-        _canvas.FillRectangle(0, 0, width, height);
+        canvas.FillColor = fillColor;
+        canvas.FillRectangle(0, 0, width, height);
 
         if (LevelFraction < UserState.AudioTriggerPercentageThreshold)
         {
-            _canvas.FillColor = Colors.LightGreen;
+            canvas.FillColor = Colors.LightGreen;
         }
         else
         {
-            _canvas.FillColor = Colors.Red;
+            canvas.FillColor = Colors.Red;
         }
-        _canvas.FillRectangle(0, 0, width * LevelFraction, height);
+        canvas.FillRectangle(0, 0, width * LevelFraction, height);
     }
 
     private void closeButton_Click(object sender, EventArgs e)
@@ -158,13 +195,15 @@ public partial class AudioLevelForm : Form
     private void controlMouseButton_Click(object sender, EventArgs e)
     {
         UserState.ControlMouse = !UserState.ControlMouse;
-        if (UserState.ControlMouse)
+        UpdateButtonLabels();
+    }
+
+    private void configureButton_Click(object sender, EventArgs e)
+    {
+        if (configForm == null || configForm.IsDisposed)
         {
-            controlMouseButton.Text = "Stop";
+            configForm = new Config();
         }
-        else
-        {
-            controlMouseButton.Text = "Control Mouse";
-        }
+        configForm.Show();
     }
 }
