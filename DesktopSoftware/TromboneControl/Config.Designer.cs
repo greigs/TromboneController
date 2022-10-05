@@ -211,7 +211,7 @@
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(152, 13);
             this.label3.TabIndex = 4;
-            this.label3.Text = "Trombone Control Beta v0.1 ";
+            this.label3.Text = "Trombone Control v0.1b ";
             // 
             // label4
             // 
