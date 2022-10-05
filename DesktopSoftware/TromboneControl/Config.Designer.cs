@@ -72,10 +72,10 @@
             this.asioRadioButton.Location = new System.Drawing.Point(16, 45);
             this.asioRadioButton.Margin = new System.Windows.Forms.Padding(1);
             this.asioRadioButton.Name = "asioRadioButton";
-            this.asioRadioButton.Size = new System.Drawing.Size(232, 19);
+            this.asioRadioButton.Size = new System.Drawing.Size(248, 19);
             this.asioRadioButton.TabIndex = 1;
             this.asioRadioButton.TabStop = true;
-            this.asioRadioButton.Text = "ASIO (requires special driver, less delay)";
+            this.asioRadioButton.Text = "ASIO -requires special driver, less input lag";
             this.asioRadioButton.UseVisualStyleBackColor = true;
             // 
             // wavRadioButton
@@ -84,10 +84,10 @@
             this.wavRadioButton.Location = new System.Drawing.Point(16, 20);
             this.wavRadioButton.Margin = new System.Windows.Forms.Padding(1);
             this.wavRadioButton.Name = "wavRadioButton";
-            this.wavRadioButton.Size = new System.Drawing.Size(185, 19);
+            this.wavRadioButton.Size = new System.Drawing.Size(204, 19);
             this.wavRadioButton.TabIndex = 0;
             this.wavRadioButton.TabStop = true;
-            this.wavRadioButton.Text = "Default Windows (more delay)";
+            this.wavRadioButton.Text = "Default Windows - more input lag";
             this.wavRadioButton.UseVisualStyleBackColor = true;
             // 
             // groupBox2
@@ -239,7 +239,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(300, 374);
+            this.ClientSize = new System.Drawing.Size(301, 374);
             this.ControlBox = false;
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.label4);

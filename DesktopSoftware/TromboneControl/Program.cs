@@ -14,13 +14,14 @@ public static class Program
 {
     public static SerialPortReader SerialPortReader { get; private set; }
 
+    private static Func<Vector<double>, Vector<double>> smootherFunc;
     private static MouseHandler mouseHandler;
     private static bool continueReadingFromComPort = true;
     private static int prevMouse;
     private static bool mousePressed;
     private static AudioLevelForm audioLevelForm;
     private const int QueueCapacity = 5;
-    private const int DeadZoneThreshold = 3;
+    private const int DeadZoneThreshold = 2;
     private static Queue<int> tofValues = new Queue<int>(QueueCapacity);
     
     /// <summary>
@@ -36,6 +37,8 @@ public static class Program
         }
 
         WarnIfMoreThanOneComPort();
+
+        smootherFunc = Smoothing.MovingAverageSmoother(QueueCapacity, Extreme.Mathematics.SignalProcessing.Padding.None);
 
         mouseHandler = new MouseHandler();
         
@@ -174,11 +177,14 @@ public static class Program
 
     private static int LatestSmoothedValueFromQueue()
     {
+        
         Vector<double> unsmoothedData = Vector.Create(tofValues.Select(x => (double)x).ToArray());
-        var result = Smoothing.MovingAverage(unsmoothedData, QueueCapacity,
-            Extreme.Mathematics.SignalProcessing.Padding.None);
+
+        var result = smootherFunc(unsmoothedData);
         var first = (int)Math.Round((decimal)result.First());
         var last = (int)Math.Round((decimal)result.Last());
+        //var first = (int)unsmoothedData.First();
+        //var last = (int)unsmoothedData.Last();
         var delta = Math.Abs(first - last);
         if (delta < DeadZoneThreshold)
         {
