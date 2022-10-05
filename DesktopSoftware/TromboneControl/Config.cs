@@ -32,6 +32,9 @@ namespace TromboneControl
             Settings.Default.MicSensitivitySliderValue = UserState.MicSensitivitySliderValue;
             Settings.Default.AudioTriggerPercentageThreshold = UserState.AudioTriggerPercentageThreshold;
             Settings.Default.SpecifyComPort = UserState.ComPortName;
+            UserState.ASIOEnabled = this.asioRadioButton.Checked;
+            UserState.WavInEnabled = !UserState.ASIOEnabled;
+            // Intentionally not saving ASIO setting here in case it locks user out on next launch
             Settings.Default.Save();
             this.Close();
         }

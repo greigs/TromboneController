@@ -25,7 +25,7 @@ namespace TromboneControl {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.6")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.3")]
         public float AudioTriggerPercentageThreshold {
             get {
                 return ((float)(this["AudioTriggerPercentageThreshold"]));
@@ -68,6 +68,18 @@ namespace TromboneControl {
             }
             set {
                 this["MicSensitivitySliderValue"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UseASIO {
+            get {
+                return ((bool)(this["UseASIO"]));
+            }
+            set {
+                this["UseASIO"] = value;
             }
         }
     }

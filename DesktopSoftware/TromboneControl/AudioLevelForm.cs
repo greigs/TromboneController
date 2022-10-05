@@ -43,9 +43,9 @@ public partial class AudioLevelForm : Form
         {
             WaveIn = new WaveInEvent
             {
-                // DeviceNumber = 0, // customize this to select your microphone device
-                WaveFormat = new WaveFormat(rate: 10000, bits: 16, channels: 1),
-                BufferMilliseconds = 1
+                // DeviceNumber = 0, // defaults to selected windows recording device?
+                WaveFormat = new WaveFormat(rate: 44100, bits: 16, channels: 1),
+                BufferMilliseconds = 10
             };
             WaveIn.DataAvailable += WaveIn_DataAvailable;
             WaveIn.StartRecording();
@@ -140,7 +140,8 @@ public partial class AudioLevelForm : Form
     private void WaveIn_DataAvailable(object? sender, WaveInEventArgs e)
     {
         int latestMax = int.MinValue;
-        for (int index = 0; index < e.BytesRecorded; index += 2)
+        const int bytesPerSample = 2;
+        for (int index = 0; index < e.BytesRecorded; index += bytesPerSample)
         {
             int value = BitConverter.ToInt16(e.Buffer, index);
             latestMax = Math.Max(latestMax, value);
